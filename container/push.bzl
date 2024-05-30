@@ -96,6 +96,8 @@ def _impl(ctx):
 
     if ctx.attr.skip_unchanged_digest:
         pusher_args += ["-skip-unchanged-digest"]
+    if ctx.attr.insecure_repository:
+        pusher_args.append("-insecure-repository")
     digester_args += ["--dst", str(ctx.outputs.digest.path), "--format", str(ctx.attr.format)]
     ctx.actions.run(
         inputs = digester_input,
@@ -162,6 +164,10 @@ _container_push = rule(
             allow_single_file = [".tar"],
             mandatory = True,
             doc = "The label of the image to push.",
+        ),
+        "insecure_repository": attr.bool(
+            default = False,
+            doc = "Whether the repository is insecure or not (http vs https)",
         ),
         "registry": attr.string(
             mandatory = True,

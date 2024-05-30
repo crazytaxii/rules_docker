@@ -4,14 +4,14 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//    http://www.apache.org/licenses/LICENSE-2.0
+//	http://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//////////////////////////////////////////////////////////////////////
+// ////////////////////////////////////////////////////////////////////
 // This binary pushes an image to a Docker Registry.
 package main
 
@@ -44,6 +44,7 @@ var (
 	format              = flag.String("format", "", "The format of the uploaded image (Docker or OCI).")
 	clientConfigDir     = flag.String("client-config-dir", "", "The path to the directory where the client configuration files are located. Overiddes the value from DOCKER_CONFIG.")
 	skipUnchangedDigest = flag.Bool("skip-unchanged-digest", false, "If set to true, will only push images where the digest has changed.")
+	insecureRepository  = flag.Bool("insecure-repository", false, "If set to true, the repository is assumed to be insecure (http vs https)")
 	layers              utils.ArrayStringFlags
 	stampInfoFile       utils.ArrayStringFlags
 )
@@ -121,6 +122,11 @@ func main() {
 		log.Printf("Destination %s was resolved to %s after stamping.", *dst, stamped)
 	}
 
+	var opts []name.Option
+	if *insecureRepository {
+		opts = append(opts, name.Insecure)
+	}
+
 	if err := push(stamped, img); err != nil {
 		log.Fatalf("Error pushing image to %s: %v", stamped, err)
 	}
@@ -153,9 +159,9 @@ func digestExists(dst string, img v1.Image) (bool, error) {
 // NOTE: This function is adapted from https://github.com/google/go-containerregistry/blob/master/pkg/crane/push.go
 // with modification for option to push OCI layout, legacy layout or Docker tarball format.
 // Push the given image to destination <dst>.
-func push(dst string, img v1.Image) error {
+func push(dst string, img v1.Image, opts ...name.Option) error {
 	// Push the image to dst.
-	ref, err := name.ParseReference(dst)
+	ref, err := name.ParseReference(dst, opts...)
 	if err != nil {
 		return errors.Wrapf(err, "error parsing %q as an image reference", dst)
 	}
